@@ -106,7 +106,7 @@ namespace LMS.Controllers
         /// false if the course already exists, true otherwise.</returns>
         public IActionResult CreateCourse(string subject, int number, string name)
         {
-            var query = from c in db.Courses where c.Subject == subject && c.Name == name && c.Number == number select c;
+            var query = from c in db.Courses where c.Subject == subject && c.Number == number select c;
             if (query.Any())
             {
                 return Json(new {success = false});
@@ -117,7 +117,7 @@ namespace LMS.Controllers
             newCourse.Name = name;
             db.Courses.Add(newCourse); 
             db.SaveChanges();
-            return Json(new { success = false });
+            return Json(new { success = true });
         }
 
 
