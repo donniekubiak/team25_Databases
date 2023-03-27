@@ -88,9 +88,9 @@ namespace LMS.Controllers
         /// <returns>The JSON result</returns>
         public IActionResult GetProfessors(string subject)
         {
-            
-            return Json(null);
-            
+            var query = from prof in db.Professors select new { lname = prof.LastName, fname = prof.FirstName, uid = prof.Uid };
+
+            return Json(query.ToArray());
         }
 
 
@@ -128,8 +128,25 @@ namespace LMS.Controllers
         /// a Class offering of the same Course in the same Semester,
         /// true otherwise.</returns>
         public IActionResult CreateClass(string subject, int number, string season, int year, DateTime start, DateTime end, string location, string instructor)
-        {            
-            return Json(new { success = false});
+        {
+            TimeOnly startTime = new TimeOnly(start.Ticks);
+            TimeOnly endTime = new TimeOnly(end.Ticks);
+            var query = from cl in db.Classes
+                        where (cl.Course.Number == number && cl.Season.Equals(season) && cl.Year == year) || //if there is a second offering of same course in same semester
+                        (cl.Location == location && cl.Season == season && cl.Year == year && //if there is another class in the same location in the same semester
+                        (cl.End > startTime && cl.Start < endTime)) //if the class ends after our new class starts and starts before the new class ends
+                        select cl;
+            if (query.Any())
+            {
+                return Json(new { success = false});
+            }
+
+            //make class
+            //find courseid based on name, number, subject
+            Class newClass = new Class();
+            
+            
+            return Json(new { success = true});
         }
 
 
