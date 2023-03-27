@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Text.Json;
 using System.Threading.Tasks;
 using LMS.Models.LMSModels;
@@ -67,8 +68,11 @@ namespace LMS.Controllers
         /// <param name="number">The course number, as in 5530</param>
         /// <returns>The JSON array</returns>
         public IActionResult GetClassOfferings(string subject, int number)
-        {            
-            return Json(null);
+        {
+            var courseQuery = from c in db.Courses where c.Subject == subject && c.Number == number select c.CourseId;
+            var courseID = courseQuery.FirstOrDefault();
+            var classQuery = from cl in db.Classes where cl.CourseId == courseID select new { season = cl.Season, year = cl.Year, location = cl.Location, start = cl.Start, end = cl.End, fname = cl.Professor.FirstName, lname = cl.Professor.LastName };
+            return Json(classQuery.ToArray());
         }
 
         /// <summary>
