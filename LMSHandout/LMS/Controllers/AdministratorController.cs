@@ -73,8 +73,8 @@ namespace LMS.Controllers
         /// <returns>The JSON result</returns>
         public IActionResult GetCourses(string subject)
         {
-            
-            return Json(null);
+            var query = from c in db.Courses where c.Subject == subject select new {number=c.Number, name=c.Name};
+            return Json(query.ToArray());
         }
 
         /// <summary>
@@ -105,7 +105,18 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing {success = true/false}.
         /// false if the course already exists, true otherwise.</returns>
         public IActionResult CreateCourse(string subject, int number, string name)
-        {           
+        {
+            var query = from c in db.Courses where c.Subject == subject && c.Name == name && c.Number == number select c;
+            if (query.Any())
+            {
+                return Json(new {success = false});
+            }
+            Course newCourse = new Course();
+            newCourse.Number = (ushort)number;
+            newCourse.Subject = subject;
+            newCourse.Name = name;
+            db.Courses.Add(newCourse); 
+            db.SaveChanges();
             return Json(new { success = false });
         }
 
