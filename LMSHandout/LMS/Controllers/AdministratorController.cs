@@ -143,7 +143,7 @@ namespace LMS.Controllers
             TimeOnly startTime = new TimeOnly(start.Ticks);
             TimeOnly endTime = new TimeOnly(end.Ticks);
             var query = from cl in db.Classes
-                        where (cl.Course.Number == number && cl.Season.Equals(season) && cl.Year == year) || //if there is a second offering of same course in same semester
+                        where (cl.Course.Number == number && cl.Course.Subject == subject && cl.Season.Equals(season) && cl.Year == year) || //if there is a second offering of same course in same semester
                         (cl.Location == location && cl.Season == season && cl.Year == year && //if there is another class in the same location in the same semester
                         (cl.End > startTime && cl.Start < endTime)) //if the class ends after our new class starts and starts before the new class ends
                         select cl;
@@ -154,6 +154,7 @@ namespace LMS.Controllers
 
             //make class
             //find courseid based on name, number, subject
+            var courseQuery = from course in db.Courses where course.Subject == subject && course.Number == number select course.CourseId; //grabs the course
             Class newClass = new Class();
             
             
