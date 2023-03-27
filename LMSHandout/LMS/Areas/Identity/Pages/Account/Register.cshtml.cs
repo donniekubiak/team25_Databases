@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -194,7 +195,54 @@ namespace LMS.Areas.Identity.Pages.Account
         /// <returns>The uID of the new user</returns>
         string CreateNewUser( string firstName, string lastName, DateTime DOB, string departmentAbbrev, string role )
         {
-            return "unknown";
+            string uid = "u0000000";
+            DateOnly dateob = new DateOnly(DOB.Year, DOB.Month, DOB.Day);
+
+            var squery = from stu in db.Students select stu.Uid;
+            var aquery = from adm in db.Administrators select adm.Uid;
+            var pquery = from pro in db.Professors select pro.Uid;
+            var allquery = squery.Union(aquery).Union(pquery).OrderBy(u => u);
+            allquery.Order();
+
+            if(allquery.Any())
+            {
+                uid = "u" + ((int.Parse(allquery.LastOrDefault().Substring(1)) + 1)%9999999).ToString("D7");
+            }
+
+            switch (role)
+            {
+                case "Administrator":
+                    Administrator newAdmin = new Administrator();
+                    newAdmin.Uid = uid;
+                    newAdmin.FirstName = firstName;
+                    newAdmin.LastName = lastName;
+                    newAdmin.Dob = dateob;
+                    db.Administrators.Add(newAdmin);
+                    break;
+
+                case "Professor":
+                    Professor newProf = new Professor();
+                    newProf.Uid = uid;
+                    newProf.FirstName = firstName;
+                    newProf.LastName = lastName;
+                    newProf.Dob = dateob;
+                    newProf.Department = departmentAbbrev;
+                    db.Professors.Add(newProf);
+                    break;
+
+                case "Student":
+                    Student newStudent = new Student();
+                    newStudent.Uid = uid;
+                    newStudent.FirstName = firstName;
+                    newStudent.LastName = lastName;
+                    newStudent.Dob = dateob;
+                    newStudent.Major = departmentAbbrev;
+                    db.Students.Add(newStudent);
+                    break;
+
+            }
+            db.SaveChanges();
+            return uid;
         }
 
         /*******End code to modify********/
