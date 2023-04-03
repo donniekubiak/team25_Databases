@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.EntityFrameworkCore;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -141,8 +143,16 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentsInCategory(string subject, int num, string season, int year, string category)
         {
-            var query = from a in db.Assignments where a.Category.Class.Course.Subject == subject && a.Category.Class.Course.Number == num && a.Category.Class.Season.Equals(season) && a.Category.Class.Year == year && a.Category.Name == category select new { aname = a.Name, cname = a.Category.Name, due = a.Due, submissions = a.Submissions.Count() };
-            return Json(query.ToArray());
+            if (category != null)
+            {
+                var query = from a in db.Assignments where a.Category.Class.Course.Subject == subject && a.Category.Class.Course.Number == num && a.Category.Class.Season.Equals(season) && a.Category.Class.Year == year && a.Category.Name == category select new { aname = a.Name, cname = a.Category.Name, due = a.Due, submissions = a.Submissions.Count() };
+                return Json(query.ToArray());
+            }
+            else
+            {
+                var query = from a in db.Assignments where a.Category.Class.Course.Subject == subject && a.Category.Class.Course.Number == num && a.Category.Class.Season.Equals(season) && a.Category.Class.Year == year select new { aname = a.Name, cname = a.Category.Name, due = a.Due, submissions = a.Submissions.Count() };
+                return Json(query.ToArray());
+            }
         }
 
 
@@ -257,7 +267,10 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetSubmissionsToAssignment(string subject, int num, string season, int year, string category, string asgname)
         {
-            return Json(null);
+            var query = from s in db.Submissions where s.Assignment.Name == asgname && s.Assignment.Category.Name == category && s.Assignment.Category.Class.Season.Equals(season)
+                        && s.Assignment.Category.Class.Year == year && s.Assignment.Category.Class.Course.Number == num && s.Assignment.Category.Class.Course.Subject == subject
+                        select new { fname = s.UidNavigation.FirstName, lname = s.UidNavigation.LastName, uid = s.Uid, time = s.Time, score = s.Score };
+            return Json(query.ToArray());
         }
 
 
@@ -275,7 +288,15 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult GradeSubmission(string subject, int num, string season, int year, string category, string asgname, string uid, int score)
         {
-            return Json(new { success = false });
+            var query = from s in db.Submissions where s.Assignment.Name == asgname && s.Assignment.Category.Name == category && s.Assignment.Category.Class.Season.Equals(season)
+                        && s.Assignment.Category.Class.Year == year && s.Assignment.Category.Class.Course.Number == num && s.Assignment.Category.Class.Course.Subject == subject
+                        && s.Uid == uid select s;
+            if(!query.Any())
+                return Json(new { success = false });
+            query.First().Score = (uint)score;
+            db.Submissions.Update(query.First());
+            db.SaveChanges();
+            return Json(new { success = true });
         }
 
 
@@ -291,8 +312,9 @@ namespace LMS_CustomIdentity.Controllers
         /// <param name="uid">The professor's uid</param>
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
-        {            
-            return Json(null);
+        {
+            var query = from c in db.Classes where c.Professor.Uid == uid select new { subject = c.Course.Subject, number = c.Course.Number, name = c.Course.Name, season = c.Season, year = c.Year };
+            return Json(query.ToArray());
         }
 
 

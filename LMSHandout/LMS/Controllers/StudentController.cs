@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using LMS.Models.LMSModels;
@@ -75,7 +76,9 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
         {           
-            return Json(null);
+            var query = from e in db.Enrolleds where e.Uid == uid select new { subject = e.Class.Course.Subject, number = e.Class.Course.Number, name = e.Class.Course.Name, 
+            season = e.Class.Season, year = e.Class.Year, grade = e.Grade == null ? "--" : e.Grade};
+            return Json(query.ToArray());
         }
 
         /// <summary>
@@ -93,8 +96,15 @@ namespace LMS.Controllers
         /// <param name="uid"></param>
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentsInClass(string subject, int num, string season, int year, string uid)
-        {            
-            return Json(null);
+        {
+            var query = from a in db.Assignments
+                        join s in db.Submissions on a.AssignmentId equals s.AssignmentId into rightsideSubmissions
+                        from a_s in rightsideSubmissions
+                        where (a_s.Uid == uid || a_s.Uid == null) && a_s.Assignment.Category.Class.Course.Subject == subject
+                        && a_s.Assignment.Category.Class.Course.Number == num && a_s.Assignment.Category.Class.Season.Equals(season)
+                        && a_s.Assignment.Category.Class.Year == year
+                        select new { aname = a_s.Assignment.Name, cname = a_s.Assignment.Category.Name, due = a_s.Assignment.Due, score = a_s.Score };
+            return Json(query.ToArray());
         }
 
 
