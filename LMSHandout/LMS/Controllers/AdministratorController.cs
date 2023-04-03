@@ -140,8 +140,8 @@ namespace LMS.Controllers
         /// true otherwise.</returns>
         public IActionResult CreateClass(string subject, int number, string season, int year, DateTime start, DateTime end, string location, string instructor)
         {
-            TimeOnly startTime = new TimeOnly(start.Ticks);
-            TimeOnly endTime = new TimeOnly(end.Ticks);
+            TimeOnly startTime = TimeOnly.FromDateTime(start);
+            TimeOnly endTime = TimeOnly.FromDateTime(end);
             var query = from cl in db.Classes
                         where (cl.Course.Number == number && cl.Course.Subject == subject && cl.Season.Equals(season) && cl.Year == year) || //if there is a second offering of same course in same semester
                         (cl.Location == location && cl.Season == season && cl.Year == year && //if there is another class in the same location in the same semester
@@ -153,10 +153,19 @@ namespace LMS.Controllers
             }
 
             //make class
-            //find courseid based on name, number, subject
+            //find courseid based on number, subject
             var courseQuery = from course in db.Courses where course.Subject == subject && course.Number == number select course.CourseId; //grabs the course
             Class newClass = new Class();
-            
+            newClass.Year = (ushort)year;
+            newClass.Season = season;
+            newClass.Location = location;
+            newClass.Start = startTime;
+            newClass.End = endTime;
+            newClass.CourseId = courseQuery.First();
+            newClass.ProfessorId = instructor;
+
+            db.Classes.Add(newClass);
+            db.SaveChanges();
             
             return Json(new { success = true});
         }

@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Mvc;
+using NuGet.Protocol;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -88,8 +89,10 @@ namespace LMS.Controllers
         /// <param name="asgname">The name of the assignment in the category</param>
         /// <returns>The assignment contents</returns>
         public IActionResult GetAssignmentContents(string subject, int num, string season, int year, string category, string asgname)
-        {            
-            return Content("");
+        {
+            var query = from a in db.Assignments where a.Category.Name == category && a.Category.Class.Course.Subject == subject && a.Category.Class.Course.Number == num
+                        && a.Category.Class.Year == year && a.Category.Class.Season.Equals(season) && a.Name == asgname select a.Contents;
+            return Content(query.First());
         }
 
 
@@ -108,8 +111,11 @@ namespace LMS.Controllers
         /// <param name="uid">The uid of the student who submitted it</param>
         /// <returns>The submission text</returns>
         public IActionResult GetSubmissionText(string subject, int num, string season, int year, string category, string asgname, string uid)
-        {            
-            return Content("");
+        {
+            var query = from s in db.Submissions where s.Assignment.Category.Class.Course.Subject == subject && s.Assignment.Category.Class.Course.Number == num
+                        && s.Assignment.Category.Class.Season.Equals(season) && s.Assignment.Category.Class.Year == year && s.Assignment.Category.Name == category
+                        && s.Assignment.Name == asgname && s.Uid == uid select s.Contents;
+            return Content(query.First());
         }
 
 
@@ -131,6 +137,18 @@ namespace LMS.Controllers
         /// </returns>
         public IActionResult GetUser(string uid)
         {           
+            var aquery = from u in db.Administrators where u.Uid == uid select new { fname = u.FirstName, lname = u.LastName, uid = u.Uid };
+            if (aquery.Any())
+            {
+                return Json( aquery.First());
+            }
+            var pquery = from u in db.Professors where u.Uid == uid select new { fname = u.FirstName, lname = u.LastName, uid = u.Uid, department = u.DepartmentNavigation.Name };
+            var squery = from u in db.Students where u.Uid == uid select new { fname = u.FirstName, lname = u.LastName, uid = u.Uid, department = u.MajorNavigation.Name };
+            var cquery = pquery.Union(squery);
+            if (cquery.Any())
+            {
+                return Json(cquery.First());
+            }
             return Json(new { success = false });
         }
 
