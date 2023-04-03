@@ -508,3 +508,15 @@ C:\Users\jorda\Source\Repos\team25_Databases\LMSHandout\LMS\obj\Debug\net7.0\ref
 C:\Users\jorda\Source\Repos\team25_Databases\LMSHandout\LMS\obj\Debug\net7.0\LMS.pdb
 C:\Users\jorda\Source\Repos\team25_Databases\LMSHandout\LMS\obj\Debug\net7.0\LMS.genruntimeconfig.cache
 C:\Users\jorda\Source\Repos\team25_Databases\LMSHandout\LMS\obj\Debug\net7.0\ref\LMS.dll
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.csproj.AssemblyReference.cache
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.AssemblyInfoInputs.cache
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.AssemblyInfo.cs
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.csproj.CoreCompileInputs.cache
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.RazorAssemblyInfo.cache
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.RazorAssemblyInfo.cs
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.dll
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\refint\LMS.dll
+C:\Users\jorda\source\repos\LMSPhase3\LMSHandout\LMS\obj\Debug\net7.0\LMS.pdb

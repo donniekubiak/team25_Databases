@@ -128,8 +128,44 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing {success = true/false}</returns>
         public IActionResult SubmitAssignmentText(string subject, int num, string season, int year,
           string category, string asgname, string uid, string contents)
-        {           
-            return Json(new { success = false });
+        {
+            var query = from s in db.Submissions
+                        where s.Assignment.Category.Class.Course.Subject == subject
+                        && s.Assignment.Category.Class.Course.Number == num
+                        && s.Assignment.Category.Class.Season.Equals(season)
+                        && s.Assignment.Category.Class.Year == year
+                        && s.Assignment.Category.Name == category
+                        && s.Assignment.Name == asgname
+                        && s.Uid == uid
+                        select s;
+            // Update existing submission
+            if (query.Any())
+            {
+                Submission existing = query.First();
+                existing.Contents = contents;
+                existing.Time = DateTime.Now;
+                db.Submissions.Update(existing);
+            } 
+            // Create new submission
+            else
+            {
+                Submission newSubmission = new Submission();
+                var assignmentIDQuery = from a in db.Assignments
+                                        where a.Category.Class.Course.Subject == subject
+                                        && a.Category.Class.Course.Number == num
+                                        && a.Category.Class.Season.Equals(season)
+                                        && a.Category.Class.Year == year
+                                        && a.Category.Name == category
+                                        && a.Name == asgname
+                                        select a.AssignmentId;
+                newSubmission.AssignmentId = assignmentIDQuery.First();
+                newSubmission.Time = DateTime.Now;
+                newSubmission.Contents = contents;
+                newSubmission.Score = 0;
+                newSubmission.Uid = uid;
+            }
+            db.SaveChanges();
+            return Json(new { success = true });
         }
 
 
@@ -144,8 +180,26 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing {success = {true/false}. 
         /// false if the student is already enrolled in the class, true otherwise.</returns>
         public IActionResult Enroll(string subject, int num, string season, int year, string uid)
-        {          
-            return Json(new { success = false});
+        {
+            var query = from e in db.Enrolleds where e.Uid == uid
+                        && e.Class.Course.Subject == subject && e.Class.Course.Number == num
+                        && e.Class.Season.Equals(season) && e.Class.Year == year select e;
+            if (query.Any())
+            {
+                return Json(new { success = false });
+            }
+            Enrolled newEnrollment = new Enrolled();
+            newEnrollment.Uid = uid;
+            var classIDQuery = from c in db.Classes
+                               where c.Course.Subject == subject && c.Course.Number == num
+                               && c.Season.Equals(season) && c.Year == year
+                               select c.ClassId;
+            newEnrollment.ClassId = classIDQuery.First();
+            newEnrollment.Grade = "--";
+
+            db.Enrolleds.Add(newEnrollment);
+            db.SaveChanges();
+            return Json(new { success = true });
         }
 
 
