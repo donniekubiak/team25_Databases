@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System.Transactions;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -106,7 +109,7 @@ namespace LMS.Controllers
                             aname = a.Name,
                             cname = a.Category.Name,
                             due = a.Due,
-                            score = a.Submissions.Where(s => s.Uid == uid).Count() > 0 ? a.Submissions.Where(s => s.Uid == uid).First().Score : 0
+                            score = a.Submissions.Where(s => s.Uid == uid).Count() > 0 ? (uint?) a.Submissions.Where(s => s.Uid == uid).First().Score : null
                         };
             return Json(query.ToArray());
         }
@@ -221,9 +224,63 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing a single field called "gpa" with the number value</returns>
         public IActionResult GetGPA(string uid)
         {            
+
             return Json(null);
         }
-                
+
+        private double GetGradeInClass(Student student, Class grade_class)
+        {
+            double total = 0;
+            var query = from ac in db.AssignmentCategories where ac.ClassId == grade_class.ClassId select ac;
+            List<double> results = new List<double>();
+            List<double> weights = new List<double>();
+            double totalweight = 0;
+            foreach(AssignmentCategory ac in query)
+            {
+                double result = GetGradeInAssignmentCategory(student, ac);
+                if (result < 0)
+                {
+                    results.Add(0);
+                    weights.Add(0);
+                }
+                else
+                {
+                    results.Add(result);
+                    weights.Add(ac.Weight);
+                    totalweight += ac.Weight;
+                }
+            }
+            for(int i = 0; i < results.Count(); i++)
+            {
+                total += results[i] * (weights[i] / totalweight);
+            }
+            return total;
+        }
+
+        /// <summary>
+        /// takes student and category object and returns total of their scores on all assignments, counting their score as 0 if no submission.
+        /// </summary>
+        /// <param name="student"></param>
+        /// <param name="category"></param>
+        /// <returns>-1 if category has no assignments, total percent of category grade otherwise</returns>
+        private double GetGradeInAssignmentCategory(Student student, AssignmentCategory category)
+        {
+            double total = 0;
+            var query = from a in db.Assignments
+                        where a.CategoryId == category.CategoryId
+                        select (double)(a.Submissions.Where(s => s.Uid == student.Uid).Count() > 0 ? a.Submissions.Where(s => s.Uid == student.Uid).First().Score : 0) / (double)a.Points;
+            if (!query.Any())
+            {
+                return -1;
+            }
+            foreach(double i in query)
+            {
+                total += i;
+            }
+            total /= query.Count();
+            return total;
+        }
+
         /*******End code to modify********/
 
     }
