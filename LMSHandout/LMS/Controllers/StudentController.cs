@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Transactions;
+using System.Xml.Schema;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -78,9 +79,9 @@ namespace LMS.Controllers
         /// <param name="uid">The uid of the student</param>
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
-        {           
-            var query = from e in db.Enrolleds where e.Uid == uid select new { subject = e.Class.Course.Subject, number = e.Class.Course.Number, name = e.Class.Course.Name, 
-            season = e.Class.Season, year = e.Class.Year, grade = e.Grade == null ? "--" : e.Grade};
+        {
+            var query = from e in db.Enrolleds where e.Uid == uid select new { subject = e.Class.Course.Subject, number = e.Class.Course.Number, name = e.Class.Course.Name,
+                season = e.Class.Season, year = e.Class.Year, grade = e.Grade == null ? "--" : e.Grade };
             return Json(query.ToArray());
         }
 
@@ -109,7 +110,7 @@ namespace LMS.Controllers
                             aname = a.Name,
                             cname = a.Category.Name,
                             due = a.Due,
-                            score = a.Submissions.Where(s => s.Uid == uid).Count() > 0 ? (uint?) a.Submissions.Where(s => s.Uid == uid).First().Score : null
+                            score = a.Submissions.Where(s => s.Uid == uid).Count() > 0 ? (uint?)a.Submissions.Where(s => s.Uid == uid).First().Score : null
                         };
             return Json(query.ToArray());
         }
@@ -152,7 +153,7 @@ namespace LMS.Controllers
                 existing.Contents = contents;
                 existing.Time = DateTime.Now;
                 db.Submissions.Update(existing);
-            } 
+            }
             // Create new submission
             else
             {
@@ -223,12 +224,68 @@ namespace LMS.Controllers
         /// <param name="uid">The uid of the student</param>
         /// <returns>A JSON object containing a single field called "gpa" with the number value</returns>
         public IActionResult GetGPA(string uid)
-        {            
+        {
 
-            return Json(null);
+            var query = from e in db.Enrolleds where e.Uid == uid select e.Grade;
+            double GPA = 0;
+            double classesWithGrades = 0;
+            foreach (var g in query)
+            {
+                double result = ConvertLetterGradeToGPA(g);
+                if (result != -1)
+                {
+                    GPA += ConvertLetterGradeToGPA(g);
+                    classesWithGrades++;
+                }
+            }
+            if (classesWithGrades == 0)
+            {
+                return 0;
+            }
+            GPA /= classesWithGrades;
+            return Json(new {gpa = GPA });
         }
 
-        private double GetGradeInClass(Student student, Class grade_class)
+        private double ConvertLetterGradeToGPA(string grade)
+        {
+            switch(grade)
+            {
+                case "A":
+                    return 4.0;
+                case "A-":
+                    return 3.7;
+                case "B+":
+                    return 3.3;
+                case "B":
+                    return 3.0;
+                case "B-":
+                    return 2.7;
+                case "C+":
+                    return 2.3;
+                case "C":
+                    return 2.0;
+                case "C-":
+                    return 1.7;
+                case "D+":
+                    return 1.3;
+                case "D":
+                    return 1.0;
+                case "D-":
+                    return 0.7;
+                case "E":
+                    return 0.0;
+                default:
+                    return -1;
+            }
+        }
+
+        /// <summary>
+        /// Returns the student's letter grade for the given class
+        /// </summary>
+        /// <param name="student">The student object</param>
+        /// <param name="grade_class">The class that the student is enrolled in</param>
+        /// <returns>The student's letter grade for the given class</returns>
+        private string SetGradeInClass(Student student, Class grade_class)
         {
             double total = 0;
             var query = from ac in db.AssignmentCategories where ac.ClassId == grade_class.ClassId select ac;
@@ -254,7 +311,64 @@ namespace LMS.Controllers
             {
                 total += results[i] * (weights[i] / totalweight);
             }
-            return total;
+            return ConvertPercentageToLetterGrade(total);
+        }
+
+        /// <summary>
+        /// Converts the given grade (from 0 to 1) to its corresponding letter grade
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private string ConvertPercentageToLetterGrade(double grade)
+        {
+            if (grade >= .93)
+            {
+                return "A";
+            } 
+            else if (grade >= 90)
+            {
+                return "A-";
+            }
+            else if (grade >= 87)
+            {
+                return "B+";
+            }
+            else if (grade >= 83)
+            {
+                return "B";
+            }
+            else if (grade >= 80)
+            {
+                return "B-";
+            }
+            else if (grade >= 77)
+            {
+                return "C+";
+            }
+            else if (grade >= 73)
+            {
+                return "C";
+            }
+            else if (grade >= 70)
+            {
+                return "C-";
+            }
+            else if (grade >= 67)
+            {
+                return "D+";
+            }
+            else if (grade >= 63)
+            {
+                return "D";
+            }
+            else if (grade >= 60)
+            {
+                return "D-";
+            }
+            else
+            {
+                return "E";
+            }
         }
 
         /// <summary>
