@@ -240,7 +240,7 @@ namespace LMS.Controllers
             }
             if (classesWithGrades == 0)
             {
-                return 0;
+                return Json(new { gpa = 0 });
             }
             GPA /= classesWithGrades;
             return Json(new {gpa = GPA });
