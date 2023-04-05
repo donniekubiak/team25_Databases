@@ -241,6 +241,18 @@ namespace LMS_CustomIdentity.Controllers
 
             db.Assignments.Add(newAssign);
             db.SaveChanges();
+
+            var update_query = from e in db.Enrolleds
+                        where e.Class.Course.Subject == subject && e.Class.Course.Number == num
+                                                    && e.Class.Season.Equals(season) && e.Class.Year == year
+                        select new { student = e.UidNavigation, e_class = e.Class };
+
+            foreach(var sc in update_query)
+            {
+                SetGradeInClass(sc.student, sc.e_class);
+            }
+
+
             return Json(new { success = true });
 
 
@@ -296,6 +308,8 @@ namespace LMS_CustomIdentity.Controllers
             query.First().Score = (uint)score;
             db.Submissions.Update(query.First());
             db.SaveChanges();
+
+            SetGradeInClass(query.First().UidNavigation, query.First().Assignment.Category.Class);
             return Json(new { success = true });
         }
 
@@ -318,7 +332,128 @@ namespace LMS_CustomIdentity.Controllers
         }
 
 
-        
+        /// <summary>
+        /// Returns the student's letter grade for the given class
+        /// </summary>
+        /// <param name="student">The student object</param>
+        /// <param name="grade_class">The class that the student is enrolled in</param>
+        /// <returns>The student's letter grade for the given class</returns>
+        private string SetGradeInClass(Student student, Class grade_class)
+        {
+            double total = 0;
+            var query = from ac in db.AssignmentCategories where ac.ClassId == grade_class.ClassId select ac;
+            List<double> results = new List<double>();
+            List<double> weights = new List<double>();
+            double totalweight = 0;
+            foreach (AssignmentCategory ac in query)
+            {
+                double result = GetGradeInAssignmentCategory(student, ac);
+                if (result < 0)
+                {
+                    results.Add(0);
+                    weights.Add(0);
+                }
+                else
+                {
+                    results.Add(result);
+                    weights.Add(ac.Weight);
+                    totalweight += ac.Weight;
+                }
+            }
+            for (int i = 0; i < results.Count(); i++)
+            {
+                total += results[i] * (weights[i] / totalweight);
+            }
+            string lettergrade = ConvertPercentageToLetterGrade(total);
+            var equery = from en in db.Enrolleds where en.Uid == student.Uid && en.ClassId == grade_class.ClassId select en;
+            Enrolled e = equery.First();
+            e.Grade = lettergrade;
+            db.Enrolleds.Update(e);
+            db.SaveChanges();
+            return ConvertPercentageToLetterGrade(total);
+        }
+
+        /// <summary>
+        /// Converts the given grade (from 0 to 1) to its corresponding letter grade
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        private string ConvertPercentageToLetterGrade(double grade)
+        {
+            if (grade >= .93)
+            {
+                return "A";
+            }
+            else if (grade >= 90)
+            {
+                return "A-";
+            }
+            else if (grade >= 87)
+            {
+                return "B+";
+            }
+            else if (grade >= 83)
+            {
+                return "B";
+            }
+            else if (grade >= 80)
+            {
+                return "B-";
+            }
+            else if (grade >= 77)
+            {
+                return "C+";
+            }
+            else if (grade >= 73)
+            {
+                return "C";
+            }
+            else if (grade >= 70)
+            {
+                return "C-";
+            }
+            else if (grade >= 67)
+            {
+                return "D+";
+            }
+            else if (grade >= 63)
+            {
+                return "D";
+            }
+            else if (grade >= 60)
+            {
+                return "D-";
+            }
+            else
+            {
+                return "E";
+            }
+        }
+
+        /// <summary>
+        /// takes student and category object and returns total of their scores on all assignments, counting their score as 0 if no submission.
+        /// </summary>
+        /// <param name="student"></param>
+        /// <param name="category"></param>
+        /// <returns>-1 if category has no assignments, total percent of category grade otherwise</returns>
+        private double GetGradeInAssignmentCategory(Student student, AssignmentCategory category)
+        {
+            double total = 0;
+            var query = from a in db.Assignments
+                        where a.CategoryId == category.CategoryId
+                        select (double)(a.Submissions.Where(s => s.Uid == student.Uid).Count() > 0 ? a.Submissions.Where(s => s.Uid == student.Uid).First().Score : 0) / (double)a.Points;
+            if (!query.Any())
+            {
+                return -1;
+            }
+            foreach (double i in query)
+            {
+                total += i;
+            }
+            total /= query.Count();
+            return total;
+        }
+
         /*******End code to modify********/
     }
 }
