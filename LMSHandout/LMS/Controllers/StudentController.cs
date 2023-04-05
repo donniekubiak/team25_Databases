@@ -98,12 +98,16 @@ namespace LMS.Controllers
         public IActionResult GetAssignmentsInClass(string subject, int num, string season, int year, string uid)
         {
             var query = from a in db.Assignments
-                        join s in db.Submissions on a.AssignmentId equals s.AssignmentId into rightsideSubmissions
-                        from a_s in rightsideSubmissions
-                        where (a_s.Uid == uid || a_s.Uid == null) && a_s.Assignment.Category.Class.Course.Subject == subject
-                        && a_s.Assignment.Category.Class.Course.Number == num && a_s.Assignment.Category.Class.Season.Equals(season)
-                        && a_s.Assignment.Category.Class.Year == year
-                        select new { aname = a_s.Assignment.Name, cname = a_s.Assignment.Category.Name, due = a_s.Assignment.Due, score = a_s.Score };
+                        where a.Category.Class.Course.Subject == subject
+                        && a.Category.Class.Course.Number == num && a.Category.Class.Season.Equals(season)
+                        && a.Category.Class.Year == year
+                        select new
+                        {
+                            aname = a.Name,
+                            cname = a.Category.Name,
+                            due = a.Due,
+                            score = a.Submissions.Where(s => s.Uid == uid).Count() > 0 ? a.Submissions.Where(s => s.Uid == uid).First().Score : 0
+                        };
             return Json(query.ToArray());
         }
 
