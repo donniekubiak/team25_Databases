@@ -302,14 +302,14 @@ namespace LMS_CustomIdentity.Controllers
         {
             var query = from s in db.Submissions where s.Assignment.Name == asgname && s.Assignment.Category.Name == category && s.Assignment.Category.Class.Season.Equals(season)
                         && s.Assignment.Category.Class.Year == year && s.Assignment.Category.Class.Course.Number == num && s.Assignment.Category.Class.Course.Subject == subject
-                        && s.Uid == uid select s;
+                        && s.Uid == uid select new { submission = s, student = s.UidNavigation, s_class = s.Assignment.Category.Class };
             if(!query.Any())
                 return Json(new { success = false });
-            query.First().Score = (uint)score;
-            db.Submissions.Update(query.First());
+            query.First().submission.Score = (uint)score;
+            db.Submissions.Update(query.First().submission);
             db.SaveChanges();
 
-            SetGradeInClass(query.First().UidNavigation, query.First().Assignment.Category.Class);
+            SetGradeInClass(query.First().student, query.First().s_class);
             return Json(new { success = true });
         }
 
@@ -344,8 +344,10 @@ namespace LMS_CustomIdentity.Controllers
             var query = from ac in db.AssignmentCategories where ac.ClassId == grade_class.ClassId select ac;
             List<double> results = new List<double>();
             List<double> weights = new List<double>();
+            db.SaveChanges();
             double totalweight = 0;
-            foreach (AssignmentCategory ac in query)
+            
+            foreach (AssignmentCategory ac in query.ToList())
             {
                 double result = GetGradeInAssignmentCategory(student, ac);
                 if (result < 0)
@@ -439,18 +441,18 @@ namespace LMS_CustomIdentity.Controllers
         private double GetGradeInAssignmentCategory(Student student, AssignmentCategory category)
         {
             double total = 0;
-            var query = from a in db.Assignments
-                        where a.CategoryId == category.CategoryId
-                        select (double)(a.Submissions.Where(s => s.Uid == student.Uid).Count() > 0 ? a.Submissions.Where(s => s.Uid == student.Uid).First().Score : 0) / (double)a.Points;
-            if (!query.Any())
+            var cquery = from a in db.Assignments
+                        where a.CategoryId == category.CategoryId select
+                        (double)(a.Submissions.Where(s => s.Uid == student.Uid).Count() > 0 ? a.Submissions.Where(s => s.Uid == student.Uid).First().Score : 0) / (double)a.Points;
+            if (cquery.ToArray().Length == 0)
             {
                 return -1;
             }
-            foreach (double i in query)
+            foreach (double i in cquery)
             {
                 total += i;
             }
-            total /= query.Count();
+            total /= cquery.Count();
             return total;
         }
 

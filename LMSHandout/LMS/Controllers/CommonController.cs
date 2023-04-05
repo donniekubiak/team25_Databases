@@ -115,6 +115,10 @@ namespace LMS.Controllers
             var query = from s in db.Submissions where s.Assignment.Category.Class.Course.Subject == subject && s.Assignment.Category.Class.Course.Number == num
                         && s.Assignment.Category.Class.Season.Equals(season) && s.Assignment.Category.Class.Year == year && s.Assignment.Category.Name == category
                         && s.Assignment.Name == asgname && s.Uid == uid select s.Contents;
+            if (!query.Any())
+            {
+                return Content("");
+            }
             return Content(query.First());
         }
 

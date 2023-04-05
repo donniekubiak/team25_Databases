@@ -171,6 +171,7 @@ namespace LMS.Controllers
                 newSubmission.Contents = contents;
                 newSubmission.Score = 0;
                 newSubmission.Uid = uid;
+                db.Submissions.Add(newSubmission);
             }
             db.SaveChanges();
             return Json(new { success = true });
