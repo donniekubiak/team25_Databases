@@ -247,7 +247,7 @@ namespace LMS_CustomIdentity.Controllers
                                                     && e.Class.Season.Equals(season) && e.Class.Year == year
                         select new { student = e.UidNavigation, e_class = e.Class };
 
-            foreach(var sc in update_query)
+            foreach(var sc in update_query.ToList())
             {
                 SetGradeInClass(sc.student, sc.e_class);
             }
@@ -386,43 +386,43 @@ namespace LMS_CustomIdentity.Controllers
             {
                 return "A";
             }
-            else if (grade >= 90)
+            else if (grade >= .90)
             {
                 return "A-";
             }
-            else if (grade >= 87)
+            else if (grade >= .87)
             {
                 return "B+";
             }
-            else if (grade >= 83)
+            else if (grade >= .83)
             {
                 return "B";
             }
-            else if (grade >= 80)
+            else if (grade >= .80)
             {
                 return "B-";
             }
-            else if (grade >= 77)
+            else if (grade >= .77)
             {
                 return "C+";
             }
-            else if (grade >= 73)
+            else if (grade >= .73)
             {
                 return "C";
             }
-            else if (grade >= 70)
+            else if (grade >= .70)
             {
                 return "C-";
             }
-            else if (grade >= 67)
+            else if (grade >= .67)
             {
                 return "D+";
             }
-            else if (grade >= 63)
+            else if (grade >= .63)
             {
                 return "D";
             }
-            else if (grade >= 60)
+            else if (grade >= .60)
             {
                 return "D-";
             }
@@ -440,20 +440,22 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>-1 if category has no assignments, total percent of category grade otherwise</returns>
         private double GetGradeInAssignmentCategory(Student student, AssignmentCategory category)
         {
-            double total = 0;
+            double studentScore = 0;
+            double pointsPossible = 0;
             var cquery = from a in db.Assignments
-                        where a.CategoryId == category.CategoryId select
-                        (double)(a.Submissions.Where(s => s.Uid == student.Uid).Count() > 0 ? a.Submissions.Where(s => s.Uid == student.Uid).First().Score : 0) / (double)a.Points;
+                        where a.CategoryId == category.CategoryId 
+                         select new { score = (double)(a.Submissions.Where(s => s.Uid == student.Uid).Count() > 0 ? a.Submissions.Where(s => s.Uid == student.Uid).First().Score : 0), possiblePoints = a.Points };
             if (cquery.ToArray().Length == 0)
             {
                 return -1;
             }
-            foreach (double i in cquery)
+            foreach (var i in cquery)
             {
-                total += i;
+                studentScore += i.score;
+                pointsPossible += i.possiblePoints;
             }
-            total /= cquery.Count();
-            return total;
+            studentScore /= pointsPossible;
+            return studentScore;
         }
 
         /*******End code to modify********/

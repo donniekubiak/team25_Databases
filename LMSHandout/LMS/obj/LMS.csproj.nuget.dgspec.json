@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\repos\\team25_Databases\\LMSHandout\\LMS\\LMS.csproj": {}
+    "C:\\Users\\jorda\\Source\\Repos\\LMSPhase3\\LMSHandout\\LMS\\LMS.csproj": {}
   },
   "projects": {
-    "D:\\repos\\team25_Databases\\LMSHandout\\LMS\\LMS.csproj": {
+    "C:\\Users\\jorda\\Source\\Repos\\LMSPhase3\\LMSHandout\\LMS\\LMS.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\repos\\team25_Databases\\LMSHandout\\LMS\\LMS.csproj",
+        "projectUniqueName": "C:\\Users\\jorda\\Source\\Repos\\LMSPhase3\\LMSHandout\\LMS\\LMS.csproj",
         "projectName": "LMS",
-        "projectPath": "D:\\repos\\team25_Databases\\LMSHandout\\LMS\\LMS.csproj",
-        "packagesPath": "C:\\Users\\DonnieLaptop\\.nuget\\packages\\",
-        "outputPath": "D:\\repos\\team25_Databases\\LMSHandout\\LMS\\obj\\",
+        "projectPath": "C:\\Users\\jorda\\Source\\Repos\\LMSPhase3\\LMSHandout\\LMS\\LMS.csproj",
+        "packagesPath": "C:\\Users\\jorda\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\jorda\\Source\\Repos\\LMSPhase3\\LMSHandout\\LMS\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\DonnieLaptop\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\jorda\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -95,7 +95,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.201\\RuntimeIdentifierGraph.json"
         }
       }
     }
