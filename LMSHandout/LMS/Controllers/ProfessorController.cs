@@ -187,21 +187,28 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing {success = true/false} </returns>
         public IActionResult CreateAssignmentCategory(string subject, int num, string season, int year, string category, int catweight)
         {
-            var query = from c in db.AssignmentCategories where c.Class.Course.Subject == subject && c.Class.Course.Number == num && c.Class.Season.Equals(season) && c.Class.Year == year && c.Name == category select c;
-            if (query.Any())
+            try
+            {
+                var query = from c in db.AssignmentCategories where c.Class.Course.Subject == subject && c.Class.Course.Number == num && c.Class.Season.Equals(season) && c.Class.Year == year && c.Name == category select c;
+                if (query.Any())
+                {
+                    return Json(new { success = false });
+                }
+                AssignmentCategory newCategory = new AssignmentCategory();
+                newCategory.Name = category;
+                newCategory.Weight = (byte)catweight;
+
+                var classIDQuery = from c in db.Classes where c.Course.Subject == subject && c.Course.Number == num && c.Season.Equals(season) && c.Year == year select c.ClassId;
+                newCategory.ClassId = classIDQuery.First();
+
+                db.AssignmentCategories.Add(newCategory);
+                db.SaveChanges();
+                return Json(new { success = true });
+            }
+            catch(Exception)
             {
                 return Json(new { success = false });
             }
-            AssignmentCategory newCategory = new AssignmentCategory();
-            newCategory.Name = category;
-            newCategory.Weight = (byte) catweight;
-
-            var classIDQuery = from c in db.Classes where c.Course.Subject == subject && c.Course.Number == num && c.Season.Equals(season) && c.Year == year select c.ClassId;
-            newCategory.ClassId = classIDQuery.First();
-
-            db.AssignmentCategories.Add(newCategory);
-            db.SaveChanges();
-            return Json(new { success = true });
         }
 
         /// <summary>
@@ -219,42 +226,50 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult CreateAssignment(string subject, int num, string season, int year, string category, string asgname, int asgpoints, DateTime asgdue, string asgcontents)
         {
-            var query = from a in db.Assignments where a.Category.Class.Course.Subject == subject && a.Category.Class.Course.Number == num
-                                                    && a.Category.Class.Season.Equals(season) && a.Category.Class.Year == year
-                                                    && a.Category.Name == category && a.Name == asgname select a;
-            if (query.Any())
+            try
+            {
+                var query = from a in db.Assignments
+                            where a.Category.Class.Course.Subject == subject && a.Category.Class.Course.Number == num
+                                                        && a.Category.Class.Season.Equals(season) && a.Category.Class.Year == year
+                                                        && a.Category.Name == category && a.Name == asgname
+                            select a;
+                if (query.Any())
+                {
+                    return Json(new { success = false });
+                }
+                Assignment newAssign = new Assignment();
+                newAssign.Name = asgname;
+                newAssign.Contents = asgcontents;
+                newAssign.Due = asgdue;
+                newAssign.Points = (uint)asgpoints;
+
+                var categoryIDQuery = from c in db.AssignmentCategories
+                                      where c.Class.Course.Subject == subject && c.Class.Course.Number == num
+                                      && c.Class.Season.Equals(season) && c.Class.Year == year
+                                      && c.Name == category
+                                      select c.CategoryId;
+                newAssign.CategoryId = categoryIDQuery.First();
+
+                db.Assignments.Add(newAssign);
+                db.SaveChanges();
+
+                var update_query = from e in db.Enrolleds
+                                   where e.Class.Course.Subject == subject && e.Class.Course.Number == num
+                                                               && e.Class.Season.Equals(season) && e.Class.Year == year
+                                   select new { student = e.UidNavigation, e_class = e.Class };
+
+                foreach (var sc in update_query.ToList())
+                {
+                    SetGradeInClass(sc.student, sc.e_class);
+                }
+
+
+                return Json(new { success = true });
+            }
+            catch (Exception)
             {
                 return Json(new { success = false });
             }
-            Assignment newAssign = new Assignment();
-            newAssign.Name = asgname;
-            newAssign.Contents = asgcontents;
-            newAssign.Due = asgdue;
-            newAssign.Points = (uint) asgpoints;
-
-            var categoryIDQuery = from c in db.AssignmentCategories
-                                  where c.Class.Course.Subject == subject && c.Class.Course.Number == num
-                                  && c.Class.Season.Equals(season) && c.Class.Year == year
-                                  && c.Name == category
-                                  select c.CategoryId;
-            newAssign.CategoryId = categoryIDQuery.First();
-
-            db.Assignments.Add(newAssign);
-            db.SaveChanges();
-
-            var update_query = from e in db.Enrolleds
-                        where e.Class.Course.Subject == subject && e.Class.Course.Number == num
-                                                    && e.Class.Season.Equals(season) && e.Class.Year == year
-                        select new { student = e.UidNavigation, e_class = e.Class };
-
-            foreach(var sc in update_query.ToList())
-            {
-                SetGradeInClass(sc.student, sc.e_class);
-            }
-
-
-            return Json(new { success = true });
-
 
 
         }
@@ -300,17 +315,26 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult GradeSubmission(string subject, int num, string season, int year, string category, string asgname, string uid, int score)
         {
-            var query = from s in db.Submissions where s.Assignment.Name == asgname && s.Assignment.Category.Name == category && s.Assignment.Category.Class.Season.Equals(season)
-                        && s.Assignment.Category.Class.Year == year && s.Assignment.Category.Class.Course.Number == num && s.Assignment.Category.Class.Course.Subject == subject
-                        && s.Uid == uid select new { submission = s, student = s.UidNavigation, s_class = s.Assignment.Category.Class };
-            if(!query.Any())
-                return Json(new { success = false });
-            query.First().submission.Score = (uint)score;
-            db.Submissions.Update(query.First().submission);
-            db.SaveChanges();
+            try
+            {
+                var query = from s in db.Submissions
+                            where s.Assignment.Name == asgname && s.Assignment.Category.Name == category && s.Assignment.Category.Class.Season.Equals(season)
+                            && s.Assignment.Category.Class.Year == year && s.Assignment.Category.Class.Course.Number == num && s.Assignment.Category.Class.Course.Subject == subject
+                            && s.Uid == uid
+                            select new { submission = s, student = s.UidNavigation, s_class = s.Assignment.Category.Class };
+                if (!query.Any())
+                    return Json(new { success = false });
+                query.First().submission.Score = (uint)score;
+                db.Submissions.Update(query.First().submission);
+                db.SaveChanges();
 
-            SetGradeInClass(query.First().student, query.First().s_class);
-            return Json(new { success = true });
+                SetGradeInClass(query.First().student, query.First().s_class);
+                return Json(new { success = true });
+            }
+            catch (Exception)
+            {
+                return Json(new { success = false });
+            }
         }
 
 
