@@ -88,7 +88,7 @@ namespace LMS.Controllers
         /// <returns>The JSON result</returns>
         public IActionResult GetProfessors(string subject)
         {
-            var query = from prof in db.Professors select new { lname = prof.LastName, fname = prof.FirstName, uid = prof.Uid };
+            var query = from prof in db.Professors where prof.Department.Equals(subject) select new { lname = prof.LastName, fname = prof.FirstName, uid = prof.Uid };
 
             return Json(query.ToArray());
         }
@@ -140,34 +140,41 @@ namespace LMS.Controllers
         /// true otherwise.</returns>
         public IActionResult CreateClass(string subject, int number, string season, int year, DateTime start, DateTime end, string location, string instructor)
         {
-            TimeOnly startTime = TimeOnly.FromDateTime(start);
-            TimeOnly endTime = TimeOnly.FromDateTime(end);
-            var query = from cl in db.Classes
-                        where (cl.Course.Number == number && cl.Course.Subject == subject && cl.Season.Equals(season) && cl.Year == year) || //if there is a second offering of same course in same semester
-                        (cl.Location == location && cl.Season == season && cl.Year == year && //if there is another class in the same location in the same semester
-                        (cl.End > startTime && cl.Start < endTime)) //if the class ends after our new class starts and starts before the new class ends
-                        select cl;
-            if (query.Any())
+            try
             {
-                return Json(new { success = false});
+                TimeOnly startTime = TimeOnly.FromDateTime(start);
+                TimeOnly endTime = TimeOnly.FromDateTime(end);
+                var query = from cl in db.Classes
+                            where (cl.Course.Number == number && cl.Course.Subject == subject && cl.Season.Equals(season) && cl.Year == year) || //if there is a second offering of same course in same semester
+                            (cl.Location == location && cl.Season == season && cl.Year == year && //if there is another class in the same location in the same semester
+                            (cl.End > startTime && cl.Start < endTime)) //if the class ends after our new class starts and starts before the new class ends
+                            select cl;
+                if (query.Any())
+                {
+                    return Json(new { success = false });
+                }
+
+                //make class
+                //find courseid based on number, subject
+                var courseQuery = from course in db.Courses where course.Subject == subject && course.Number == number select course.CourseId; //grabs the course
+                Class newClass = new Class();
+                newClass.Year = (ushort)year;
+                newClass.Season = season;
+                newClass.Location = location;
+                newClass.Start = startTime;
+                newClass.End = endTime;
+                newClass.CourseId = courseQuery.First();
+                newClass.ProfessorId = instructor;
+
+                db.Classes.Add(newClass);
+                db.SaveChanges();
+
+                return Json(new { success = true });
             }
-
-            //make class
-            //find courseid based on number, subject
-            var courseQuery = from course in db.Courses where course.Subject == subject && course.Number == number select course.CourseId; //grabs the course
-            Class newClass = new Class();
-            newClass.Year = (ushort)year;
-            newClass.Season = season;
-            newClass.Location = location;
-            newClass.Start = startTime;
-            newClass.End = endTime;
-            newClass.CourseId = courseQuery.First();
-            newClass.ProfessorId = instructor;
-
-            db.Classes.Add(newClass);
-            db.SaveChanges();
-            
-            return Json(new { success = true});
+            catch (Exception)
+            {
+                return Json(new { success = false });
+            }
         }
 
 
